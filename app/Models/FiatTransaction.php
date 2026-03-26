@@ -3,20 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 #[Fillable([
+    'trade_id',
     'sender_id',
     'receiver_id',
-    'cryptocurrency_id',
+    'fiat_currency',
     'amount',
-    'transfer_type',
-    'external_address',
+    'transaction_type',
     'status',
 ])]
-class CryptoTransfer extends Model
+class FiatTransaction extends Model
 {
     use HasUuids;
 
@@ -26,8 +26,13 @@ class CryptoTransfer extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal:8',
+            'amount' => 'decimal:2',
         ];
+    }
+
+    public function trade(): BelongsTo
+    {
+        return $this->belongsTo(Trade::class);
     }
 
     public function sender(): BelongsTo
@@ -39,9 +44,5 @@ class CryptoTransfer extends Model
     {
         return $this->belongsTo(User::class, 'receiver_id');
     }
-
-    public function cryptocurrency(): BelongsTo
-    {
-        return $this->belongsTo(Cryptocurrency::class);
-    }
 }
+
