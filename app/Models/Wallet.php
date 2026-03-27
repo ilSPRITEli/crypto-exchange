@@ -31,4 +31,32 @@ class Wallet extends Model
     {
         return $this->belongsTo(Cryptocurrency::class);
     }
+
+    public function hasSufficientBalance(string|float|int $amount): bool
+    {
+        return bccomp((string) $this->balance, (string) $amount, 8) >= 0;
+    }
+
+    public function deposit(string|float|int $amount): self
+    {
+        $this->balance = bcadd((string) $this->balance, (string) $amount, 8);
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     */
+    public function withdraw(string|float|int $amount): self
+    {
+        if (! $this->hasSufficientBalance($amount)) {
+            throw new \InvalidArgumentException('Insufficient balance.');
+        }
+
+        $this->balance = bcsub((string) $this->balance, (string) $amount, 8);
+        $this->save();
+
+        return $this;
+    }
 }

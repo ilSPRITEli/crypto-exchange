@@ -44,4 +44,14 @@ class CryptoTransfer extends Model
     {
         return $this->belongsTo(Cryptocurrency::class);
     }
+
+    public function isInternal(): bool
+    {
+        return $this->transfer_type === 'internal';
+    }
+
+    public function isExternal(): bool
+    {
+        return $this->transfer_type === 'external';
+    }
 }

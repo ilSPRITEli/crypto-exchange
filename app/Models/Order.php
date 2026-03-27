@@ -48,4 +48,23 @@ class Order extends Model
     {
         return $this->hasMany(Trade::class);
     }
+
+    public function isOpen(): bool
+    {
+        return $this->status === 'open';
+    }
+
+    public function decreaseRemainingAmount(string|float|int $amount): self
+    {
+        $new = bcsub((string) $this->remaining_amount, (string) $amount, 8);
+
+        if (bccomp($new, '0', 8) < 0) {
+            $new = '0';
+        }
+
+        $this->remaining_amount = $new;
+        $this->save();
+
+        return $this;
+    }
 }
