@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\LookupController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TradeController;
 use App\Http\Controllers\TransferController;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/profile', [AuthController::class, 'profile']);
+
+Route::get('/lookups', [LookupController::class, 'index']);
 
 Route::get('/orders', [OrderController::class, 'index']);
 Route::get('/orders/{id}', [OrderController::class, 'show']);
