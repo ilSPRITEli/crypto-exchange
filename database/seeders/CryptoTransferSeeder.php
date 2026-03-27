@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\CryptoTransfer;
 use App\Models\Cryptocurrency;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Database\Seeder;
 
 class CryptoTransferSeeder extends Seeder
@@ -29,6 +30,8 @@ class CryptoTransferSeeder extends Seeder
 
             $receiverId = null;
             $externalAddress = null;
+            $crypto = $cryptos->random();
+            $amount = (string) fake()->randomFloat(8, 0.0001, 1);
 
             if ($isInternal) {
                 $receiverId = $users->where('id', '!=', $sender->id)->random()->id;
@@ -36,11 +39,24 @@ class CryptoTransferSeeder extends Seeder
                 $externalAddress = '0x' . fake()->regexify('[A-Fa-f0-9]{40}');
             }
 
+            $senderWallet = Wallet::query()
+                ->where('user_id', $sender->id)
+                ->where('cryptocurrency_id', $crypto->id)
+                ->first();
+
+            if (! $senderWallet) {
+                continue;
+            }
+
+            if (! $senderWallet->hasSufficientBalance($amount)) {
+                $senderWallet->deposit('5.00000000');
+            }
+
             CryptoTransfer::query()->create([
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiverId,
-                'cryptocurrency_id' => $cryptos->random()->id,
-                'amount' => fake()->randomFloat(8, 0.0001, 1),
+                'cryptocurrency_id' => $crypto->id,
+                'amount' => $amount,
                 'transfer_type' => $isInternal ? 'internal' : 'external',
                 'external_address' => $externalAddress,
                 'status' => fake()->randomElement($statuses),

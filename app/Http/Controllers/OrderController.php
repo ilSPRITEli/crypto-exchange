@@ -92,12 +92,6 @@ class OrderController extends Controller
             'amount' => ['sometimes', 'numeric', 'gt:0'],
         ]);
 
-        if (array_key_exists('amount', $data) && array_key_exists('order_type', $data) && $data['order_type'] === 'sell') {
-            // If increasing a sell order, ensure wallet has enough for the new remaining amount.
-            // Remaining is recalculated below.
-        }
-
-        // Keep remaining_amount consistent with amount updates.
         if (array_key_exists('amount', $data)) {
             $used = bcsub((string) $order->amount, (string) $order->remaining_amount, 8);
             if (bccomp((string) $data['amount'], $used, 8) < 0) {

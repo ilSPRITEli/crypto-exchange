@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Cryptocurrency;
 use App\Models\Order;
 use App\Models\Trade;
 use App\Models\User;
@@ -17,37 +16,54 @@ class TradeSeeder extends Seeder
     {
         $users = User::query()->get();
 
-        $orders = Order::query()
-            ->with('cryptocurrency')
-            ->get();
+        $orders = Order::query()->where('status', 'open')->get();
 
         if ($orders->isEmpty() || $users->count() < 2) {
             return;
         }
 
-        $tradeStatuses = ['pending_payment', 'paid', 'completed', 'cancelled'];
-        $fiatCurrencies = ['THB', 'USD'];
-
-        foreach (range(1, 10) as $i) {
+        foreach (range(1, 8) as $i) {
+            /** @var Order $order */
             $order = $orders->random();
 
-            $buyer = $users->random();
-            $seller = $users->where('id', '!=', $buyer->id)->random();
+            $owner = $users->firstWhere('id', $order->user_id);
+            if (! $owner) {
+                continue;
+            }
 
-            $amount = fake()->randomFloat(8, 0.001, 1);
-            $price = fake()->randomFloat(2, 100, 200000);
+            $counterparty = $users->where('id', '!=', $owner->id)->random();
 
-            Trade::query()->create([
+            $buyer = $order->order_type === 'buy' ? $owner : $counterparty;
+            $seller = $order->order_type === 'sell' ? $owner : $counterparty;
+
+            $remaining = (string) $order->remaining_amount;
+            if (bccomp($remaining, '0', 8) <= 0) {
+                continue;
+            }
+
+            // trade amount must be <= remaining
+            $amount = (string) fake()->randomFloat(8, 0.001, (float) $remaining);
+            if (bccomp($amount, $remaining, 8) === 1) {
+                $amount = $remaining;
+            }
+
+            $trade = Trade::query()->create([
                 'order_id' => $order->id,
                 'buyer_id' => $buyer->id,
                 'seller_id' => $seller->id,
                 'cryptocurrency_id' => $order->cryptocurrency_id,
-                'fiat_currency' => fake()->randomElement($fiatCurrencies),
-                'price_per_unit' => $price,
+                'fiat_currency' => $order->fiat_currency,
+                'price_per_unit' => $order->price_per_unit,
                 'amount' => $amount,
-                'total_price' => $amount * $price,
-                'trade_status' => fake()->randomElement($tradeStatuses),
+                'total_price' => Trade::calculateTotalAmount($order->price_per_unit, $amount),
+                'trade_status' => 'pending_payment',
             ]);
+
+            // reflect the same rule as controller: decrease remaining and complete if 0
+            $order->decreaseRemainingAmount($amount);
+            if (bccomp((string) $order->remaining_amount, '0', 8) === 0) {
+                $order->update(['status' => 'completed']);
+            }
         }
     }
 }

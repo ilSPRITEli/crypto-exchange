@@ -25,7 +25,10 @@ class WalletSeeder extends Seeder
                         'cryptocurrency_id' => $crypto->id,
                     ],
                     [
-                        'balance' => fake()->randomFloat(8, 0, 10),
+                        // Give enough balance for testing sell/transfer flows.
+                        'balance' => $user->email === 'test@example.com'
+                            ? '100.00000000'
+                            : (string) fake()->randomFloat(8, 1, 20),
                     ]
                 );
             }
