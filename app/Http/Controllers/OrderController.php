@@ -11,6 +11,7 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $orders = Order::query()
+            ->with(['user', 'cryptocurrency'])
             ->latest()
             ->paginate(20);
 
@@ -44,6 +45,7 @@ class OrderController extends Controller
             'remaining_amount' => $amount,
             'status' => 'open',
         ]);
+        $order->load(['user', 'cryptocurrency']);
 
         return response()->json([
             'message' => 'created',
@@ -68,7 +70,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'updated',
-            'data' => $order->fresh(),
+            'data' => $order->fresh(['user', 'cryptocurrency', 'trades']),
         ]);
     }
 
@@ -79,7 +81,7 @@ class OrderController extends Controller
 
         return response()->json([
             'message' => 'cancelled',
-            'data' => $order->fresh(),
+            'data' => $order->fresh(['user', 'cryptocurrency', 'trades']),
         ]);
     }
 }

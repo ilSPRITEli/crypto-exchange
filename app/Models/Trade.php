@@ -60,8 +60,13 @@ class Trade extends Model
         return $this->hasMany(FiatTransaction::class);
     }
 
+    public static function calculateTotalAmount(string|float|int $pricePerUnit, string|float|int $amount): string
+    {
+        return bcmul((string) $pricePerUnit, (string) $amount, 2);
+    }
+
     public function calculateTotal(): string
     {
-        return bcmul((string) $this->price_per_unit, (string) $this->amount, 2);
+        return static::calculateTotalAmount($this->price_per_unit, $this->amount);
     }
 }

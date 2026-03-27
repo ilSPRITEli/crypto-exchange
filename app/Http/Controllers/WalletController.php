@@ -11,6 +11,7 @@ class WalletController extends Controller
     public function index(Request $request): JsonResponse
     {
         $wallets = Wallet::query()
+            ->with(['user', 'cryptocurrency'])
             ->latest()
             ->paginate(20);
 
@@ -20,6 +21,7 @@ class WalletController extends Controller
     public function showByUser(string $userId): JsonResponse
     {
         $wallets = Wallet::query()
+            ->with('cryptocurrency')
             ->where('user_id', $userId)
             ->orderBy('cryptocurrency_id')
             ->get();

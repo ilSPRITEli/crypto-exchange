@@ -11,6 +11,7 @@ class TradeController extends Controller
     public function index(Request $request): JsonResponse
     {
         $trades = Trade::query()
+            ->with(['order', 'buyer', 'seller', 'cryptocurrency'])
             ->latest()
             ->paginate(20);
 
@@ -19,7 +20,9 @@ class TradeController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $trade = Trade::query()->findOrFail($id);
+        $trade = Trade::query()
+            ->with(['order', 'buyer', 'seller', 'cryptocurrency', 'fiatTransactions'])
+            ->findOrFail($id);
 
         return response()->json([
             'data' => $trade,
@@ -38,14 +41,12 @@ class TradeController extends Controller
             'amount' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $amount = (float) $data['amount'];
-        $price = (float) $data['price_per_unit'];
-
         $trade = Trade::query()->create([
             ...$data,
-            'total_price' => $amount * $price,
+            'total_price' => Trade::calculateTotalAmount($data['price_per_unit'], $data['amount']),
             'trade_status' => 'pending_payment',
         ]);
+        $trade->load(['order', 'buyer', 'seller', 'cryptocurrency']);
 
         return response()->json([
             'message' => 'created',
@@ -60,7 +61,9 @@ class TradeController extends Controller
 
         return response()->json([
             'message' => 'completed',
-            'data' => $trade->fresh(),
+            'data' => $trade->fresh([
+                'order', 'buyer', 'seller', 'cryptocurrency', 'fiatTransactions',
+            ]),
         ]);
     }
 
@@ -71,7 +74,9 @@ class TradeController extends Controller
 
         return response()->json([
             'message' => 'cancelled',
-            'data' => $trade->fresh(),
+            'data' => $trade->fresh([
+                'order', 'buyer', 'seller', 'cryptocurrency', 'fiatTransactions',
+            ]),
         ]);
     }
 }

@@ -23,6 +23,7 @@ class TransferController extends Controller
             'external_address' => null,
             'status' => 'completed',
         ]);
+        $transfer->load(['sender', 'receiver', 'cryptocurrency']);
 
         return response()->json([
             'message' => 'created',
@@ -45,6 +46,7 @@ class TransferController extends Controller
             'transfer_type' => 'external',
             'status' => 'pending',
         ]);
+        $transfer->load(['sender', 'receiver', 'cryptocurrency']);
 
         return response()->json([
             'message' => 'created',
@@ -54,7 +56,9 @@ class TransferController extends Controller
 
     public function history(Request $request): JsonResponse
     {
-        $query = CryptoTransfer::query()->latest();
+        $query = CryptoTransfer::query()
+            ->with(['sender', 'receiver', 'cryptocurrency'])
+            ->latest();
 
         if ($request->filled('user_id')) {
             $request->validate([
@@ -62,7 +66,11 @@ class TransferController extends Controller
             ]);
 
             $userId = (string) $request->input('user_id');
-            $query->where('sender_id', $userId)->orWhere('receiver_id', $userId);
+
+            $query->where(function ($q) use ($userId): void {
+                $q->where('sender_id', $userId)
+                    ->orWhere('receiver_id', $userId);
+            });
         }
 
         return response()->json($query->paginate(20));
